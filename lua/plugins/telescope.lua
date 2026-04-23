@@ -58,6 +58,28 @@ return {
       end, {
         desc = "Search files (quick)",
       })
+
+      -- 🎹 Search all keymaps (very useful)
+      vim.keymap.set("n", "<leader>sk", builtin.keymaps, {
+        desc = "Search keymaps",
+      })
+
+      vim.keymap.set("n", "<leader>sc", builtin.commands, {
+        desc = "Search commands",
+      })
+
+      -- ⚙️ Search Neovim config files
+      vim.keymap.set("n", "<leader>sn", function()
+        builtin.find_files({
+          cwd = vim.fn.expand("~/.config/nvim"),
+        })
+      end, {
+        desc = "Search Neovim config",
+      })
+
+      vim.keymap.set("n", "<leader>sh", builtin.help_tags, {
+        desc = "Search help",
+      })
     end,
   },
 }

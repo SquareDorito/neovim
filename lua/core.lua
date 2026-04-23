@@ -143,11 +143,46 @@ vim.keymap.set("n", "<leader>pr", function()
   end
 end, { desc = "Change project root" })
 
-vim.keymap.set("t", "<Esc>", [[<C-\><C-n>]], {
-  desc = "Exit terminal mode",
-})
-
 vim.keymap.set("t", "<C-h>", [[<C-\><C-n><C-w>h]])
 vim.keymap.set("t", "<C-j>", [[<C-\><C-n><C-w>j]])
 vim.keymap.set("t", "<C-k>", [[<C-\><C-n><C-w>k]])
 vim.keymap.set("t", "<C-l>", [[<C-\><C-n><C-w>l]])
+
+local function is_file_buffer(buf)
+  return vim.api.nvim_buf_is_valid(buf)
+    and vim.bo[buf].buftype == ""
+    and vim.api.nvim_buf_get_name(buf) ~= ""
+end
+
+local function file_windows()
+  local wins = vim.api.nvim_tabpage_list_wins(0)
+
+  table.sort(wins, function(a, b)
+    return vim.fn.win_id2win(a) < vim.fn.win_id2win(b)
+  end)
+
+  return vim.tbl_filter(function(win)
+    local buf = vim.api.nvim_win_get_buf(win)
+    return is_file_buffer(buf)
+  end, wins)
+end
+
+local function focus_file_window(index)
+  local wins = file_windows()
+  local target = wins[index]
+
+  if target and vim.api.nvim_win_is_valid(target) then
+    vim.api.nvim_set_current_win(target)
+    return
+  end
+
+  vim.notify("No file window " .. index .. " in this tab", vim.log.levels.INFO)
+end
+
+for i = 1, 9 do
+  vim.keymap.set("n", "<leader>" .. i, function()
+    focus_file_window(i)
+  end, {
+    desc = "Focus file window " .. i,
+  })
+end
