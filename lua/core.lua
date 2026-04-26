@@ -4,6 +4,12 @@
 local root = require("utils.root")
 
 -- =========================
+-- OPTIONS
+-- =========================
+vim.opt.scrollback = 100000
+vim.opt.mouse = "a"
+
+-- =========================
 -- PROJECT NAVIGATION
 -- =========================
 
@@ -32,24 +38,31 @@ end, { desc = "Open Neovim config project" })
 -- =========================
 local builtin = require("telescope.builtin")
 
--- 🔎 Find files (project root)
+-- `rg --files` across project root + ~/notebooks (the code-workspace extras)
+local function find_cmd()
+  local cmd = { "rg", "--files", "--hidden", "--glob", "!**/.git/**" }
+  vim.list_extend(cmd, root.get_all())
+  return cmd
+end
+
+-- 🔎 Find files (project root + notebooks)
 vim.keymap.set("n", "<leader>ff", function()
   builtin.find_files({
-    cwd = root.get(),
+    find_command = find_cmd(),
   })
 end, { desc = "Find files" })
 
--- 🔍 Live grep (search text)
+-- 🔍 Live grep (project root + notebooks)
 vim.keymap.set("n", "<leader>fg", function()
   builtin.live_grep({
-    cwd = root.get(),
+    search_dirs = root.get_all(),
   })
 end, { desc = "Live grep" })
 
 -- ⭐ “Search everything” (file search entry point)
 vim.keymap.set("n", "<leader><leader>", function()
   builtin.find_files({
-    cwd = root.get(),
+    find_command = find_cmd(),
   })
 end, { desc = "Search files (quick)" })
 
@@ -108,11 +121,19 @@ vim.api.nvim_create_autocmd("BufWritePre", {
 local term_buf = nil
 local term_win = nil
 
-vim.keymap.set("n", "<leader>tt", function()
-  -- If terminal is open, close it
+local function close_bottom_term_if_open()
   if term_win and vim.api.nvim_win_is_valid(term_win) then
     vim.api.nvim_win_close(term_win, true)
     term_win = nil
+    return true
+  end
+  return false
+end
+
+_G.close_bottom_term_if_open = close_bottom_term_if_open
+
+vim.keymap.set("n", "<leader>tt", function()
+  if close_bottom_term_if_open() then
     return
   end
 
@@ -130,8 +151,27 @@ vim.keymap.set("n", "<leader>tt", function()
   vim.cmd("startinsert")
 end, { desc = "Toggle bottom terminal" })
 
+vim.keymap.set({ "n", "t" }, "<C-_>", function()
+  if close_bottom_term_if_open() then
+    return
+  end
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    local cfg = vim.api.nvim_win_get_config(win)
+    if cfg.relative ~= "" then
+      local buf = vim.api.nvim_win_get_buf(win)
+      if vim.bo[buf].buftype == "terminal" then
+        vim.api.nvim_win_close(win, true)
+      end
+    end
+  end
+end, { desc = "Close bottom term or floating AI panel" })
+
 vim.keymap.set("t", "<Esc>", [[<C-\><C-n>]], {
   desc = "Exit terminal mode",
+})
+
+vim.keymap.set("t", "<C-n>", [[<C-\><C-n>]], {
+  desc = "Enter normal mode from terminal",
 })
 
 vim.keymap.set("n", "<leader>pr", function()

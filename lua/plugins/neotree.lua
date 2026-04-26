@@ -44,6 +44,13 @@ return {
       end, {
         desc = "Reveal project root",
       })
+
+      -- reveal notebooks dir (mirrors the extra folder in *.code-workspace)
+      vim.keymap.set("n", "<leader>nb", function()
+        vim.cmd("Neotree show " .. vim.fn.expand("~/notebooks"))
+      end, {
+        desc = "Reveal notebooks",
+      })
     end,
   },
 }

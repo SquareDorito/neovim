@@ -1,6 +1,7 @@
 return {
   {
     "ishiooon/codex.nvim",
+    cond = function() return vim.g.ai_provider == "codex" end,
     dependencies = {
       "folke/snacks.nvim",
     },

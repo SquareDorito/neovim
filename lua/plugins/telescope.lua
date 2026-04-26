@@ -16,17 +16,26 @@ return {
         },
       })
 
-      -- 📂 Find files (project root)
+      -- Build an `rg --files` command spanning the project root and extras
+      -- (i.e. ~/notebooks), so telescope's find_files sees everything that
+      -- *.code-workspace would have shown as a folder.
+      local function find_cmd()
+        local cmd = { "rg", "--files", "--hidden", "--glob", "!**/.git/**" }
+        vim.list_extend(cmd, root.get_all())
+        return cmd
+      end
+
+      -- 📂 Find files (project root + notebooks)
       vim.keymap.set("n", "<leader>ff", function()
         builtin.find_files({
-          cwd = root.get(),
+          find_command = find_cmd(),
         })
       end, { desc = "Find files" })
 
-      -- 🔍 Live grep (project root)
+      -- 🔍 Live grep (project root + notebooks)
       vim.keymap.set("n", "<leader>fg", function()
         builtin.live_grep({
-          cwd = root.get(),
+          search_dirs = root.get_all(),
         })
       end, { desc = "Live grep" })
 
@@ -53,7 +62,7 @@ return {
       -- ⭐ Search everything (file-centric)
       vim.keymap.set("n", "<leader><leader>", function()
         builtin.find_files({
-          cwd = root.get(),
+          find_command = find_cmd(),
         })
       end, {
         desc = "Search files (quick)",

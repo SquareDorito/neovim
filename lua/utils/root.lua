@@ -10,4 +10,23 @@ function M.get()
   return root
 end
 
+-- Additional workspace folders that should be visible alongside the project
+-- root, mirroring the "folders" list in *.code-workspace files.
+function M.get_extras()
+  local extras = {}
+  local notebooks = vim.fn.expand("~/notebooks")
+
+  if vim.fn.isdirectory(notebooks) == 1 then
+    table.insert(extras, notebooks)
+  end
+
+  return extras
+end
+
+function M.get_all()
+  local all = { M.get() }
+  vim.list_extend(all, M.get_extras())
+  return all
+end
+
 return M

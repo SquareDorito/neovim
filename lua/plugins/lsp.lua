@@ -27,7 +27,7 @@ return {
       vim.keymap.set("n", "gd", vim.lsp.buf.definition, {
         desc = "Go to definition",
       })
-      vim.keymap.set("n", "gr", vim.lsp.buf.references, {
+      vim.keymap.set("n", "gr", require("telescope.builtin").lsp_references, {
         desc = "Show references",
       })
       vim.keymap.set("n", "K", vim.lsp.buf.hover, {
@@ -36,8 +36,16 @@ return {
       vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, {
         desc = "Rename symbol",
       })
-      vim.keymap.set("n", "gi", vim.lsp.buf.implementation, {
-        desc = "Go to implementation",
+      vim.keymap.set("n", "gi", function()
+        for _, c in ipairs(vim.lsp.get_clients({ bufnr = 0 })) do
+          if c.server_capabilities.implementationProvider then
+            vim.lsp.buf.implementation()
+            return
+          end
+        end
+        vim.lsp.buf.definition()
+      end, {
+        desc = "Go to implementation (falls back to definition)",
       })
       vim.keymap.set("n", "gt", vim.lsp.buf.type_definition, {
         desc = "Go to type definition",
