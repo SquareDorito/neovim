@@ -49,6 +49,11 @@ return {
       })
       vim.lsp.enable("eslint")
 
+      vim.lsp.config("rust_analyzer", {
+        capabilities = capabilities,
+      })
+      vim.lsp.enable("rust_analyzer")
+
       vim.keymap.set("n", "gd", vim.lsp.buf.definition, {
         desc = "Go to definition",
       })

@@ -54,7 +54,7 @@ return {
       })
 
       -- 🌍 Symbols across workspace
-      vim.keymap.set("n", "<leader>sw", builtin.lsp_workspace_symbols, {
+      vim.keymap.set("n", "<leader>sw", builtin.lsp_dynamic_workspace_symbols, {
         desc = "Workspace symbols",
       })
 
