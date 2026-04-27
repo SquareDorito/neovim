@@ -72,6 +72,10 @@ vim.keymap.set("n", "<leader>fb", builtin.buffers, {
   desc = "Buffers",
 })
 
+-- 🗑️  Close buffers
+vim.keymap.set("n", "<leader>bd", "<cmd>%bd<cr>", { desc = "Close all buffers" })
+vim.keymap.set("n", "<leader>bo", "<cmd>%bd|e#|bd#<cr>", { desc = "Close other buffers" })
+
 -- 🕘 Recent files
 vim.keymap.set("n", "<leader>fr", builtin.oldfiles, {
   desc = "Recent files",

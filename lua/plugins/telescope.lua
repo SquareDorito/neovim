@@ -8,11 +8,20 @@ return {
     config = function()
       local telescope = require("telescope")
       local builtin = require("telescope.builtin")
+      local actions = require("telescope.actions")
       local root = require("utils.root") -- ⭐ shared project root
 
       telescope.setup({
         defaults = {
           cwd = root.get(), -- ensures default sync
+          mappings = {
+            i = {
+              ["<C-s>"] = actions.select_vertical,
+            },
+            n = {
+              ["<C-s>"] = actions.select_vertical,
+            },
+          },
         },
       })
 
