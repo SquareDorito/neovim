@@ -8,6 +8,7 @@ local root = require("utils.root")
 -- =========================
 vim.opt.scrollback = 100000
 vim.opt.mouse = "a"
+vim.opt.autoread = true
 
 -- =========================
 -- PROJECT NAVIGATION
@@ -226,3 +227,50 @@ for i = 1, 9 do
     desc = "Focus file window " .. i,
   })
 end
+
+-- =========================
+-- FOCUS EVENTS, CHECKTIME, AUTOSAVE
+-- =========================
+-- tmux must have `set -g focus-events on` for FocusGained/FocusLost to fire
+-- inside a tmux pane.
+
+local focus_group = vim.api.nvim_create_augroup("FocusAndSave", { clear = true })
+
+-- Pull external file changes into the buffer when we re-focus or re-enter it.
+vim.api.nvim_create_autocmd({ "FocusGained", "BufEnter", "CursorHold", "CursorHoldI" }, {
+  group = focus_group,
+  callback = function()
+    -- checktime errors in command-line mode and is meaningless for non-file buffers.
+    if vim.fn.mode() ~= "c" and vim.bo.buftype == "" then
+      vim.cmd("checktime")
+    end
+  end,
+})
+
+-- Make external reloads visible instead of silent.
+vim.api.nvim_create_autocmd("FileChangedShellPost", {
+  group = focus_group,
+  callback = function()
+    vim.notify("File changed on disk — buffer reloaded", vim.log.levels.WARN)
+  end,
+})
+
+local function should_autosave(buf)
+  if not vim.api.nvim_buf_is_valid(buf) then return false end
+  if vim.bo[buf].buftype ~= "" then return false end
+  if not vim.bo[buf].modifiable then return false end
+  if not vim.bo[buf].modified then return false end
+  if vim.api.nvim_buf_get_name(buf) == "" then return false end
+  return true
+end
+
+vim.api.nvim_create_autocmd({ "FocusLost", "BufLeave" }, {
+  group = focus_group,
+  callback = function(args)
+    if should_autosave(args.buf) then
+      vim.api.nvim_buf_call(args.buf, function()
+        vim.cmd("silent! write")
+      end)
+    end
+  end,
+})
