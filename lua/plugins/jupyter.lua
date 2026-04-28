@@ -134,6 +134,7 @@ return {
     end,
     keys = {
       { "<leader>mi", "<cmd>MoltenInit<cr>",                  desc = "Molten: init kernel" },
+      { "<leader>mR", "<cmd>MoltenRestart!<cr>",              desc = "Molten: restart kernel (clear outputs)" },
       { "<leader>ml", "<cmd>MoltenEvaluateLine<cr>",          desc = "Molten: eval line" },
       { "<leader>mr", "<cmd>MoltenReevaluateCell<cr>",        desc = "Molten: re-eval molten cell" },
       { "<leader>mv", ":<C-u>MoltenEvaluateVisual<cr>gv",     mode = "v", desc = "Molten: eval visual" },

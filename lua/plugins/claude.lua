@@ -1,7 +1,6 @@
 return {
   {
     "folke/snacks.nvim",
-    cond = function() return vim.g.ai_provider == "claude" end,
     keys = {
       {
         "<leader>cc",
