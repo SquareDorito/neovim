@@ -28,19 +28,40 @@ return {
       vim.g.molten_use_border_highlights = true
     end,
     config = function()
-      -- Auto-init a kernel when opening a .ipynb. Uses the currently activated
-      -- conda env's kernel (via $CONDA_DEFAULT_ENV); falls back to python3.
+      -- Auto-init a kernel when opening a .ipynb. Picks `N-repoN` based on which
+      -- worktree nvim was launched in (or the buffer's path), so notebooks at
+      -- ~/notebooks/ run against repoN's source. The kernel is started once per
+      -- session as a shared kernel; subsequent notebooks attach to the same one
+      -- so state persists across buffers.
+      local function repo_kernel()
+        for _, p in ipairs({ vim.fn.getcwd(), vim.fn.expand("%:p") }) do
+          local n = p:match("/parent%-repo/repo(%d+)")
+          if n then return n .. "-repo" .. n end
+        end
+      end
+      local started_kernels = {}
       local group = vim.api.nvim_create_augroup("MoltenAutoInit", { clear = true })
-      vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
+      -- jupytext.nvim hooks BufReadCmd, which replaces BufRead/BufNewFile.
+      -- BufWinEnter fires after the BufReadCmd handler returns, so the autocmd
+      -- runs once the buffer is fully loaded and visible.
+      vim.api.nvim_create_autocmd("BufWinEnter", {
         group = group,
         pattern = "*.ipynb",
         callback = function(args)
           if vim.b[args.buf].molten_initialized then return end
           vim.b[args.buf].molten_initialized = true
           vim.defer_fn(function()
-            local conda_env = os.getenv("CONDA_DEFAULT_ENV")
-            local kernel = (conda_env and conda_env ~= "base") and conda_env or "python3"
-            pcall(vim.cmd, "MoltenInit " .. kernel)
+            local kernel = repo_kernel() or "python3"
+            local cmd = started_kernels[kernel]
+                and ("MoltenInit " .. kernel)
+                or  ("MoltenInit shared " .. kernel)
+            started_kernels[kernel] = true
+            local ok, err = pcall(vim.cmd, cmd)
+            if ok then
+              vim.notify("Molten: " .. cmd, vim.log.levels.INFO)
+            else
+              vim.notify("MoltenInit failed: " .. tostring(err), vim.log.levels.ERROR)
+            end
           end, 200)
         end,
       })
