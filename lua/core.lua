@@ -160,6 +160,11 @@ vim.keymap.set({ "n", "t" }, "<C-_>", function()
   if close_bottom_term_if_open() then
     return
   end
+  -- AI panels can be split windows, which the floating-window sweep below misses
+  local ok, ai = pcall(require, "ai")
+  if ok and ai.hide_all() then
+    return
+  end
   for _, win in ipairs(vim.api.nvim_list_wins()) do
     local cfg = vim.api.nvim_win_get_config(win)
     if cfg.relative ~= "" then

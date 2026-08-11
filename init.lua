@@ -2,8 +2,8 @@
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
--- AI assistant provider: "codex" or "claude"
-vim.g.ai_provider = os.getenv("NVIM_AI") or "claude"
+-- AI providers live in lua/ai.lua; NVIM_AI only picks the startup default and
+-- can be switched at runtime with <leader>cp or :AI <provider>.
 
 -- Use the currently activated conda env's python for remote plugins (Molten).
 -- Falls back to rebal-prod if no env is active.
