@@ -34,20 +34,22 @@ return {
       })
       vim.lsp.enable("pyright")
 
-      vim.lsp.config("tsserver", {
+      vim.lsp.config("ts_ls", {
         capabilities = capabilities,
       })
-      vim.lsp.enable("tsserver")
+      vim.lsp.enable("ts_ls")
 
       vim.lsp.config("ruff", {
         capabilities = capabilities,
       })
       vim.lsp.enable("ruff")
 
-      vim.lsp.config("eslint", {
-        capabilities = capabilities,
-      })
-      vim.lsp.enable("eslint")
+      if vim.fn.executable("vscode-eslint-language-server") == 1 then
+        vim.lsp.config("eslint", {
+          capabilities = capabilities,
+        })
+        vim.lsp.enable("eslint")
+      end
 
       vim.lsp.config("rust_analyzer", {
         capabilities = capabilities,

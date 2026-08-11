@@ -5,6 +5,8 @@ return {
       require("conform").setup({
         formatters_by_ft = {
           python = { "ruff_format" }, -- fast + modern default
+          markdown = { "prettier" }, -- prettier is on PATH (conda env)
+          ["markdown.mdx"] = { "prettier" },
         },
 
         format_on_save = {

@@ -8,9 +8,25 @@ return {
       local root = require("utils.root")
 
       require("incline").setup({
+        highlight = {
+          groups = {
+            InclineNormal = {
+              guibg = "#2c313c",
+              guifg = "#abb2bf",
+            },
+            InclineNormalNC = {
+              guibg = "#21252b",
+              guifg = "#7f848e",
+            },
+          },
+        },
         window = {
           margin = { vertical = 0, horizontal = 1 },
           padding = 1,
+          placement = {
+            horizontal = "right",
+            vertical = "top",
+          },
         },
         hide = {
           cursorline = false,

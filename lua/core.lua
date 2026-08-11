@@ -10,6 +10,23 @@ vim.opt.scrollback = 100000
 vim.opt.mouse = "a"
 vim.opt.autoread = true
 
+local function apply_editor_highlights()
+  vim.api.nvim_set_hl(0, "CursorLine", { bg = "#242832" })
+  vim.api.nvim_set_hl(0, "CursorLineNr", { fg = "#abb2bf", bg = "#242832", bold = true })
+end
+
+local editor_highlights_group = vim.api.nvim_create_augroup("EditorHighlights", { clear = true })
+vim.api.nvim_create_autocmd("ColorScheme", {
+  group = editor_highlights_group,
+  callback = apply_editor_highlights,
+})
+apply_editor_highlights()
+
+-- Copy visual selections, including mouse selections in floating terminals.
+vim.keymap.set("x", "<C-c>", '"+y', {
+  desc = "Copy selection to clipboard",
+})
+
 -- =========================
 -- PROJECT NAVIGATION
 -- =========================
@@ -192,6 +209,10 @@ vim.keymap.set("n", "<leader>pr", function()
     print("Project root set to:", new_root)
   end
 end, { desc = "Change project root" })
+
+vim.keymap.set("n", "<leader>gw", function()
+  require("utils.worktree").select()
+end, { desc = "Switch git worktree" })
 
 vim.keymap.set("t", "<C-h>", [[<C-\><C-n><C-w>h]])
 vim.keymap.set("t", "<C-j>", [[<C-\><C-n><C-w>j]])

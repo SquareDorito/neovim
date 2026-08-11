@@ -14,6 +14,19 @@ if vim.fn.executable(nvim_py) == 1 then
   vim.g.python3_host_prog = nvim_py
 end
 
+-- Prefer source-built CLIs over Mason's prebuilt shims when both exist.
+-- This avoids glibc mismatches from downloaded binaries on older EC2 images.
+local cargo_bin = vim.fn.expand("~/.cargo/bin")
+if vim.fn.isdirectory(cargo_bin) == 1 then
+  vim.env.PATH = cargo_bin .. ":" .. vim.env.PATH
+end
+local mason_tree_sitter = vim.fn.stdpath("data") .. "/mason/bin/tree-sitter"
+if vim.fn.executable(mason_tree_sitter) == 1 then
+  vim.env.PATH = table.concat(vim.tbl_filter(function(part)
+    return part ~= vim.fn.stdpath("data") .. "/mason/bin"
+  end, vim.split(vim.env.PATH or "", ":", { plain = true })), ":")
+end
+
 -- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 
@@ -35,6 +48,7 @@ require("lazy").setup({
   { import = "plugins" }
 })
 
+require("codex_socket").start()
 require("core")
 
 -- Editor defaults
@@ -45,4 +59,6 @@ vim.opt.clipboard = "unnamedplus"
 vim.opt.expandtab = true
 vim.opt.shiftwidth = 2
 vim.opt.tabstop = 2
-vim.cmd("colorscheme onedark")
+vim.opt.cursorline = true
+vim.opt.cursorlineopt = "number,line"
+vim.opt.guifont = "Iosevka:h12"
