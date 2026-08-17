@@ -4,6 +4,11 @@
 -- once, and every session renders either as a float or as a right vertical
 -- split (`M.toggle_layout`). Sessions are Snacks terminals keyed by
 -- (cmd, cwd, count), so a session survives hiding and layout changes.
+--
+-- Only one panel is ever visible: showing a session hides the others, so extra
+-- sessions behave like tabs (cycle with <leader>cj / <leader>ck) instead of
+-- stacking as splits inside the right column or piling up as overlapping
+-- floats. The visible panel carries a tab bar of every live session.
 
 local root = require("utils.root")
 
@@ -108,6 +113,50 @@ function M.list()
   return out
 end
 
+--- Hide every live session except (name, n).
+local function hide_others(name, n)
+  for _, s in ipairs(M.list()) do
+    if not (s.provider == name and s.n == n) and s.win:valid() then
+      s.win:hide()
+    end
+  end
+end
+
+--- Tab bar for one session's own panel, with that session marked active.
+--- Split panels get a statusline-syntax winbar; floats get border-title chunks.
+local function tab_bar(live, name, n, as_winbar)
+  local out = {}
+  for _, s in ipairs(live) do
+    local hl = (s.provider == name and s.n == n) and "TabLineSel" or "TabLine"
+    local text = " " .. label(s.provider, s.n) .. " "
+    out[#out + 1] = as_winbar and ("%#" .. hl .. "#" .. text) or { text, hl }
+  end
+  if as_winbar then
+    -- keep the unused remainder of the winbar out of the last tab's highlight
+    out[#out + 1] = "%#TabLineFill#"
+    return table.concat(out)
+  end
+  return out
+end
+
+--- Repaint every session's tab bar, so each panel lists all live sessions.
+local function apply_tabs()
+  local live = M.list()
+  for _, s in ipairs(live) do
+    s.win.opts.wo = s.win.opts.wo or {}
+    if M.layout == "split" then
+      local bar = tab_bar(live, s.provider, s.n, true)
+      s.win.opts.wo.winbar = bar
+      if s.win:win_valid() then
+        vim.wo[s.win.win].winbar = bar
+      end
+    else
+      s.win.opts.wo.winbar = ""
+      s.win:set_title(tab_bar(live, s.provider, s.n, false))
+    end
+  end
+end
+
 local function resize_pty(win, name)
   local p = M.providers[name]
   if not (p and p.pty_footer) or not win:win_valid() then
@@ -124,11 +173,12 @@ local function resize_pty(win, name)
   pcall(vim.fn.jobresize, job, width, height)
 end
 
-local function refresh_ptys()
+local function refresh()
   vim.schedule(function()
     for _, s in ipairs(M.list()) do
       resize_pty(s.win, s.provider)
     end
+    apply_tabs()
   end)
 end
 
@@ -159,7 +209,7 @@ function M.open(name, n)
           vim.b[self.buf].ai_provider = name
           vim.b[self.buf].ai_session = n
         end,
-        on_win = refresh_ptys,
+        on_win = refresh,
       }),
     })
     sessions[name] = sessions[name] or {}
@@ -169,8 +219,9 @@ function M.open(name, n)
   M.provider = name
   last = { provider = name, n = n }
 
+  hide_others(name, n)
   win:show():focus()
-  refresh_ptys()
+  refresh()
   return win
 end
 
@@ -184,10 +235,9 @@ function M.toggle()
   if win and win:valid() then
     if vim.api.nvim_get_current_buf() == win.buf then
       win:hide()
-    else
-      win:focus()
+      return
     end
-    return
+    -- route through open() so focusing also re-establishes exclusivity
   end
 
   M.open(last and last.provider, last and last.n)
@@ -275,7 +325,7 @@ function M.set_layout(layout)
     end
   end
 
-  refresh_ptys()
+  refresh()
   vim.notify("AI panels: " .. (layout == "split" and "right split" or "float"))
 end
 
@@ -370,7 +420,7 @@ function M.setup()
   local group = vim.api.nvim_create_augroup("AiPanels", { clear = true })
   vim.api.nvim_create_autocmd({ "VimResized", "WinResized", "TermOpen", "WinEnter" }, {
     group = group,
-    callback = refresh_ptys,
+    callback = refresh,
   })
 
   local map = function(mode, lhs, rhs, desc)
@@ -383,6 +433,10 @@ function M.setup()
   map("n", "<leader>cw", M.toggle_layout, "AI panel: float <-> right split")
   map("n", "<leader>cj", function() M.cycle(1) end, "Next AI session")
   map("n", "<leader>ck", function() M.cycle(-1) end, "Previous AI session")
+  -- leader maps are unreachable from inside the pty, where <leader> is the CLI's
+  -- input; these cycle tabs without leaving terminal mode
+  map({ "n", "t" }, "<M-j>", function() M.cycle(1) end, "Next AI session")
+  map({ "n", "t" }, "<M-k>", function() M.cycle(-1) end, "Previous AI session")
   map("x", "<leader>cs", M.send_selection, "Send selection to AI")
   map("n", "<leader>cb", M.add_buffer, "Send buffer path to AI")
 
