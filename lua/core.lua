@@ -219,42 +219,48 @@ vim.keymap.set("t", "<C-j>", [[<C-\><C-n><C-w>j]])
 vim.keymap.set("t", "<C-k>", [[<C-\><C-n><C-w>k]])
 vim.keymap.set("t", "<C-l>", [[<C-\><C-n><C-w>l]])
 
-local function is_file_buffer(buf)
-  return vim.api.nvim_buf_is_valid(buf)
-    and vim.bo[buf].buftype == ""
-    and vim.api.nvim_buf_get_name(buf) ~= ""
-end
-
-local function file_windows()
-  local wins = vim.api.nvim_tabpage_list_wins(0)
+-- Numbering covers every split in the tab — diffview's file panel and diff
+-- columns, neo-tree, the AI right split — ordered by screen position rather
+-- than creation order. Floats (telescope, the AI float layout) are skipped so
+-- an overlay never shifts the numbering underneath it.
+local function ordered_windows()
+  local wins = vim.tbl_filter(function(win)
+    return vim.api.nvim_win_get_config(win).relative == ""
+  end, vim.api.nvim_tabpage_list_wins(0))
 
   table.sort(wins, function(a, b)
-    return vim.fn.win_id2win(a) < vim.fn.win_id2win(b)
+    local a_row, a_col = unpack(vim.api.nvim_win_get_position(a))
+    local b_row, b_col = unpack(vim.api.nvim_win_get_position(b))
+    if a_col ~= b_col then
+      return a_col < b_col
+    end
+    return a_row < b_row
   end)
 
-  return vim.tbl_filter(function(win)
-    local buf = vim.api.nvim_win_get_buf(win)
-    return is_file_buffer(buf)
-  end, wins)
+  return wins
 end
 
-local function focus_file_window(index)
-  local wins = file_windows()
-  local target = wins[index]
+local function focus_window(index)
+  local target = ordered_windows()[index]
 
   if target and vim.api.nvim_win_is_valid(target) then
     vim.api.nvim_set_current_win(target)
     return
   end
 
-  vim.notify("No file window " .. index .. " in this tab", vim.log.levels.INFO)
+  vim.notify("No window " .. index .. " in this tab", vim.log.levels.INFO)
 end
 
 for i = 1, 9 do
-  vim.keymap.set("n", "<leader>" .. i, function()
-    focus_file_window(i)
+  vim.keymap.set({ "n", "t" }, "<M-" .. i .. ">", function()
+    focus_window(i)
   end, {
-    desc = "Focus file window " .. i,
+    desc = "Focus window " .. i,
+  })
+  vim.keymap.set("n", "<leader>" .. i, function()
+    focus_window(i)
+  end, {
+    desc = "Focus window " .. i,
   })
 end
 
