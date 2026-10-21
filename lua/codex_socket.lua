@@ -7,7 +7,7 @@ local function project_root()
     return git_root
   end
 
-  return vim.fs.root(0, { ".git", "pyrightconfig.json", "pyproject.toml", "package.json", "tsconfig.json" }) or cwd
+  return vim.fs.root(0, { ".git", "ty.toml", "pyproject.toml", "package.json", "tsconfig.json" }) or cwd
 end
 
 local function socket_path(root)

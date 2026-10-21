@@ -4,35 +4,14 @@ return {
     config = function()
       local capabilities = require("cmp_nvim_lsp").default_capabilities()
 
-      -- Derive pyright's extraPaths from this nvim instance's cwd: walk to git
-      -- toplevel, append /rebal if present. Each nvim session gets its own
-      -- worktree-scoped config; no shared symlinks, no cross-tmux state.
-      local function active_rebal()
-        local cwd = vim.fn.getcwd()
-        local toplevel = vim.fn.systemlist({ "git", "-C", cwd, "rev-parse", "--show-toplevel" })[1]
-        if toplevel and toplevel ~= "" and vim.fn.isdirectory(toplevel .. "/rebal") == 1 then
-          return toplevel .. "/rebal"
-        end
-        return nil
-      end
-
+      -- Run the active conda env's ty so it resolves that env's packages; ty.toml in the repo supplies extra-paths.
       local conda_prefix = os.getenv("CONDA_PREFIX") or "/opt/data/conda/envs/rebal-prod"
-      local extra_paths = {}
-      local rebal = active_rebal()
-      if rebal then table.insert(extra_paths, rebal) end
-
-      vim.lsp.config("pyright", {
+      local ty_bin = conda_prefix .. "/bin/ty"
+      vim.lsp.config("ty", {
         capabilities = capabilities,
-        settings = {
-          python = {
-            pythonPath = conda_prefix .. "/bin/python",
-            analysis = {
-              extraPaths = extra_paths,
-            },
-          },
-        },
+        cmd = { vim.fn.executable(ty_bin) == 1 and ty_bin or "ty", "server" },
       })
-      vim.lsp.enable("pyright")
+      vim.lsp.enable("ty")
 
       vim.lsp.config("ts_ls", {
         capabilities = capabilities,
