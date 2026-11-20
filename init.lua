@@ -55,6 +55,17 @@ require("core")
 vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.termguicolors = true
+-- No X display here: copy to the laptop clipboard via OSC 52. Paste from nvim's own register, because most
+-- terminals refuse OSC 52 reads and the paste would block until timeout.
+local osc52 = require("vim.ui.clipboard.osc52")
+local function paste_unnamed()
+  return { vim.fn.split(vim.fn.getreg(""), "\n"), vim.fn.getregtype("") }
+end
+vim.g.clipboard = {
+  name = "OSC 52",
+  copy = { ["+"] = osc52.copy("+"), ["*"] = osc52.copy("*") },
+  paste = { ["+"] = paste_unnamed, ["*"] = paste_unnamed },
+}
 vim.opt.clipboard = "unnamedplus"
 vim.opt.expandtab = true
 vim.opt.shiftwidth = 2
